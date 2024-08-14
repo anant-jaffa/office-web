@@ -1,3 +1,5 @@
+let correctedText = ''; // Global variable to store the corrected text
+
 async function uploadFiles() {
     const form = document.getElementById('uploadForm');
     const pdfFile = form.pdfFile.files[0];
@@ -28,13 +30,14 @@ async function uploadFiles() {
         if (response.ok) {
             const result = await response.json();
             if (result.corrected_text) {
-                output.textContent = result.corrected_text;
+                correctedText = result.corrected_text; // Store the corrected text
+                output.textContent = correctedText;
 
                 // Show the result in Word
                 await Word.run(async (context) => {
                     const doc = context.document;
                     const body = doc.body;
-                    body.insertText(result.corrected_text, Word.InsertLocation.end);
+                    body.insertText(correctedText, Word.InsertLocation.end);
                     await context.sync();
                 });
             } else if (result.error) {
@@ -53,13 +56,11 @@ async function uploadFiles() {
 }
 
 async function summarize() {
-    const form = document.getElementById('uploadForm');
-    const pdfFile = form.pdfFile.files[0];
     const output = document.getElementById('output');
-    const buttons = form.querySelectorAll('button');
+    const buttons = document.querySelectorAll('button');
 
-    if (!pdfFile) {
-        output.textContent = 'Please select a PDF file.';
+    if (!correctedText) {
+        output.textContent = 'Please process the audio file first.';
         return;
     }
 
@@ -69,7 +70,7 @@ async function summarize() {
     output.textContent = "Generating summary, please wait...";
 
     const formData = new FormData();
-    formData.append('pdf', pdfFile);
+    formData.append('text', correctedText); // Send the corrected text
 
     try {
         const response = await fetch('https://flask-app-5ux4.onrender.com/summarize', {
